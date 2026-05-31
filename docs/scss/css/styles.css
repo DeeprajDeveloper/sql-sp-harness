@@ -1,3 +1,4 @@
+@charset "UTF-8";
 @import url("https://fonts.googleapis.com/css2?family=Alegreya+Sans:ital,wght@0,100;0,300;0,400;0,500;0,700;0,800;0,900;1,100;1,300;1,400;1,500;1,700;1,800;1,900&family=Cascadia+Code:ital,wght@0,200..700;1,200..700&family=Space+Grotesk:wght@300..700&display=swap");
 :root {
   --font-heading: Alegreya Sans, system-ui, -apple-system, sans-serif;
@@ -140,12 +141,40 @@ a:hover {
   color: var(--muted);
 }
 
+.sidebar-version {
+  display: flex;
+  justify-content: center;
+  margin: 0.35rem 0.75rem 0;
+}
+
+.sidebar-version__value {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--mono);
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
 .divider {
   height: 1px;
   background: var(--border);
   margin: 1rem 0;
 }
 
+@keyframes nav-arrow-nudge {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+}
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -155,24 +184,50 @@ a:hover {
   padding: 0 0.75rem;
 }
 .sidebar-nav a.nav-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0;
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   color: var(--muted);
   text-decoration: none;
   border: 1px solid transparent;
 }
+.sidebar-nav a.nav-item::before {
+  content: "→";
+  flex-shrink: 0;
+  font-size: 0.9em;
+  line-height: 1;
+  color: var(--accent);
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  transform: translateX(0);
+  transition: opacity 0.15s ease, width 0.15s ease;
+}
 .sidebar-nav a.nav-item:hover {
+  gap: 0.35rem;
   background: var(--surface-2);
   color: var(--text);
   text-decoration: none;
   border: 1px solid var(--accent);
 }
+.sidebar-nav a.nav-item:hover::before {
+  opacity: 1;
+  width: 1.1em;
+  animation: nav-arrow-nudge 0.55s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-nav a.nav-item:hover::before {
+    animation: none;
+    transform: translateX(2px);
+  }
+}
 
 .sidebar-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
   margin-top: auto;
   padding: 1rem 0.75rem 0;
 }
@@ -324,7 +379,7 @@ html[data-theme=light] #theme-toggle .theme-icon--moon {
 }
 
 .hero-title {
-  font-size: 48px;
+  font-size: 56px;
   font-family: var(--font-heading);
   margin: 0 0 1rem;
   font-weight: 600;
@@ -417,7 +472,6 @@ section {
 section h2 {
   font-size: 2rem;
   margin: 0 0 1rem;
-  letter-spacing: -0.02em;
   font-family: var(--font-heading);
   font-weight: 600;
   color: var(--accent);
@@ -578,10 +632,90 @@ pre code {
 .code-tabs__panel[data-active=true] {
   display: block;
 }
-.code-tabs__panel pre {
-  margin-top: 0;
-  border-top-left-radius: 0;
-  border-top-right-radius: 10px;
+
+.install-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 0 0 10px 10px;
+}
+
+.install-step__note {
+  margin: 0 0 0.5rem;
+  font-size: 0.92rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+.install-step__note strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+.install-step__note--sub {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.snippet-block {
+  position: relative;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+}
+.snippet-block pre {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  padding: 0.85rem 1.1rem;
+  padding-right: 5.5rem;
+}
+.snippet-block:hover .snippet-block__copy, .snippet-block:focus-within .snippet-block__copy {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.snippet-block__copy {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.snippet-block__copy:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--surface);
+}
+.snippet-block__copy:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.snippet-block__copy[data-copied=true] {
+  opacity: 1;
+  pointer-events: auto;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.code-tabs__panel .install-steps {
+  margin: 0;
 }
 
 table {

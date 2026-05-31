@@ -1,0 +1,99 @@
+@use "variables" as *;
+
+.install-steps {
+  display: flex;
+  flex-direction: column;
+  gap: $space-5xl;
+  padding: $space-5xl;
+  background: $code-bg;
+  border: $border-width solid $border;
+  // border-top: none;
+  border-radius: 0 0 $radius $radius;
+}
+
+.install-step__note {
+  margin: 0 0 $space-md;
+  font-size: $font-size-nav;
+  color: $text;
+  line-height: $line-height-subtitle;
+
+  strong {
+    color: $accent;
+    font-weight: $font-weight-semibold;
+  }
+
+  &--sub {
+    margin-top: $space-md;
+    font-size: $font-size-xs;
+    color: $muted;
+  }
+}
+
+.snippet-block {
+  position: relative;
+  border-radius: $radius-sm;
+  border: $border-width solid $border;
+  background: $surface;
+  overflow: hidden;
+
+  pre {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    padding: $space-2xl $space-4xl;
+    padding-right: 5.5rem;
+  }
+
+  &:hover .snippet-block__copy,
+  &:focus-within .snippet-block__copy {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.snippet-block__copy {
+  position: absolute;
+  top: $space-md;
+  right: $space-md;
+  z-index: 1;
+  font-family: $font-body;
+  font-size: $font-size-2xs;
+  font-weight: $font-weight-semibold;
+  padding: $space-xs $space-md;
+  border-radius: $radius-sm;
+  border: $border-width solid $border;
+  background: $surface-2;
+  color: $muted;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+
+  &:hover {
+    color: $accent;
+    border-color: $accent;
+    background: $surface;
+  }
+
+  &:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+    outline: 2px solid $accent;
+    outline-offset: 2px;
+  }
+
+  &[data-copied="true"] {
+    opacity: 1;
+    pointer-events: auto;
+    color: $accent;
+    border-color: $accent;
+  }
+}
+
+.code-tabs__panel .install-steps {
+  margin: 0;
+}

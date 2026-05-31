@@ -24,6 +24,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Sync docs version from package
+        run: python3 scripts/sync_docs_version.py
+
       - name: Compile site CSS
         run: npx --yes sass docs/scss/styles.scss docs/scss/css/styles.css --style=compressed
 

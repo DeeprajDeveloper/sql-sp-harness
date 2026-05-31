@@ -142,10 +142,89 @@
     }
   }
 
+  function initPackageVersion() {
+    var root = document.getElementById("package-version");
+    if (!root) {
+      return;
+    }
+    var valueEl = root.querySelector(".sidebar-version__value");
+    if (!valueEl) {
+      return;
+    }
+    fetch("./version.json")
+      .then(function (response) {
+        return response.ok ? response.json() : null;
+      })
+      .then(function (data) {
+        if (data && data.version) {
+          valueEl.textContent = "Version: " + data.version;
+        }
+      })
+      .catch(function () {
+        /* keep HTML fallback */
+      });
+  }
+
+  function initCopySnippets() {
+    document.querySelectorAll(".snippet-block").forEach(function (block) {
+      var button = block.querySelector(".snippet-block__copy");
+      var code = block.querySelector("pre code");
+      if (!button || !code) {
+        return;
+      }
+
+      function copyText() {
+        var text = code.textContent || "";
+        if (!text) {
+          return;
+        }
+        var done = function () {
+          button.textContent = "Copied";
+          button.setAttribute("data-copied", "true");
+          window.setTimeout(function () {
+            button.textContent = "Copy";
+            button.removeAttribute("data-copied");
+          }, 1600);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(function () {
+            fallbackCopy(text, done);
+          });
+        } else {
+          fallbackCopy(text, done);
+        }
+      }
+
+      function fallbackCopy(text, onSuccess) {
+        var area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.style.position = "fixed";
+        area.style.left = "-9999px";
+        document.body.appendChild(area);
+        area.select();
+        try {
+          if (document.execCommand("copy")) {
+            onSuccess();
+          }
+        } finally {
+          document.body.removeChild(area);
+        }
+      }
+
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        copyText();
+      });
+    });
+  }
+
   function boot() {
     initTheme();
     initSidebar();
     initCodeTabs();
+    initPackageVersion();
+    initCopySnippets();
   }
 
   if (document.readyState === "loading") {

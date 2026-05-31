@@ -49,10 +49,44 @@
   color: $muted;
 }
 
+.sidebar-version {
+  display: flex;
+  justify-content: center;
+  margin: $space-sm $space-xl 0;
+}
+
+.sidebar-version__value {
+  display: inline-block;
+  padding: $space-xs $space-lg;
+  border-radius: $radius-sm;
+  border: $border-width solid $border;
+  background: $surface;
+  font-size: $font-size-2xs;
+  font-weight: $font-weight-semibold;
+  font-family: $font-mono;
+  letter-spacing: 0.02em;
+  color: $muted;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
 .divider {
   height: 1px;
   background: $border;
   margin: $space-3xl 0;
+}
+
+@keyframes nav-arrow-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  50% {
+    transform: translateX(2px);
+  }
 }
 
 .sidebar-nav {
@@ -65,18 +99,49 @@
   padding: 0 $space-xl;
 
   a.nav-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0;
     padding: $space-md $space-xl;
     border-radius: $radius-sm;
     color: $muted;
     text-decoration: none;
     border: $border-width solid transparent;
 
+    &::before {
+      content: "→";
+      flex-shrink: 0;
+      font-size: 0.9em;
+      line-height: 1;
+      color: $accent;
+      opacity: 0;
+      width: 0;
+      overflow: hidden;
+      transform: translateX(0);
+      transition:
+        opacity 0.15s ease,
+        width 0.15s ease;
+    }
+
     &:hover {
+      gap: $space-sm;
       background: $surface-2;
       color: $text;
       text-decoration: none;
       border: $border-width solid $accent;
+
+      &::before {
+        opacity: 1;
+        width: 1.1em;
+        animation: nav-arrow-nudge 0.55s ease-in-out infinite;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &:hover::before {
+        animation: none;
+        transform: translateX(2px);
+      }
     }
   }
 
@@ -85,7 +150,8 @@
 .sidebar-actions {
   display: flex;
   align-items: center;
-  gap: $space-md;
+  justify-content: space-between;
+  // gap: $space-md;
   margin-top: auto;
   padding: $space-3xl $space-xl 0;
   // border-top: $border-width solid $border;

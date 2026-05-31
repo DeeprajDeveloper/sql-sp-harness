@@ -54,10 +54,4 @@
   &[data-active="true"] {
     display: block;
   }
-
-  pre {
-    margin-top: 0;
-    border-top-left-radius: 0;
-    border-top-right-radius: $radius;
-  }
 }
