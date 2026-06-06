@@ -387,7 +387,7 @@ html[data-theme=light] #theme-toggle .theme-icon--moon {
 
 .hero-title {
   font-size: 56px;
-  font-family: "Doto", system-ui, -apple-system, sans-serif;
+  font-family: var(--font-heading);
   margin: 0 0 1rem;
   font-weight: 700;
   line-height: 1.2;
