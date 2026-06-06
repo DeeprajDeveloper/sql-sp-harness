@@ -1,10 +1,7 @@
 """Tests for SQL file encoding detection."""
 
-from pathlib import Path
-
+from conftest import sample_sql
 from sql_sp_harness.encoding import decode_sql_bytes, read_sql_file
-
-SAMPLES = Path(__file__).parents[1] / "samples"
 
 
 def test_decode_utf8():
@@ -48,6 +45,6 @@ def test_read_sql_file_auto_utf16(tmp_path: Path):
 
 
 def test_read_utf8_sample():
-    text, detected = read_sql_file(SAMPLES / "my_proc.sql")
+    text, detected = read_sql_file(sample_sql("my_proc.sql"))
     assert "usp_ProcessEmployeeBonus" in text
     assert detected is None

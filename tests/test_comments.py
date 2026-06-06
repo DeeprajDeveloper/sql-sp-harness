@@ -1,11 +1,8 @@
 """Tests for comment stripping."""
 
-from pathlib import Path
-
+from conftest import sample_sql
 from sql_sp_harness.comments import strip_sql_comments
 from sql_sp_harness.transform import transform_sql
-
-SAMPLES = Path(__file__).parents[1] / "samples"
 
 
 def test_strip_line_comment_preserves_string_literals():
@@ -39,7 +36,7 @@ def test_strip_star_banner_block_comment():
 
 
 def test_transform_strips_revision_block_by_default():
-    sql = (SAMPLES / "enterprise_complex_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("enterprise_complex_proc.sql").read_text(encoding="utf-8")
     result = transform_sql(sql)
     assert "Mod Date" not in result.sql
     assert "DEBUG HARNESS" in result.sql
@@ -47,6 +44,6 @@ def test_transform_strips_revision_block_by_default():
 
 
 def test_transform_keep_comments():
-    sql = (SAMPLES / "enterprise_complex_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("enterprise_complex_proc.sql").read_text(encoding="utf-8")
     result = transform_sql(sql, strip_comments=False)
     assert "Mod Date" in result.sql

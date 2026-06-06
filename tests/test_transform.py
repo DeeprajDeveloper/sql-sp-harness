@@ -1,11 +1,9 @@
 """Tests for debug harness transformation."""
 
 import re
-from pathlib import Path
 
+from conftest import sample_sql
 from sql_sp_harness.transform import transform_sql
-
-SAMPLES = Path(__file__).parents[1] / "samples"
 
 
 def _active_dml_lines(sql: str) -> list[str]:
@@ -32,7 +30,7 @@ def _active_dml_lines(sql: str) -> list[str]:
 
 
 def test_transform_simple_proc_stubs_dml():
-    sql = (SAMPLES / "simple_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("simple_proc.sql").read_text(encoding="utf-8")
     result = transform_sql(sql)
     assert result.stats.dml_stubbed >= 2  # UPDATE dbo.Employees + INSERT dbo.AuditLog
     assert result.stats.traces_added >= 2  # SET @IsSuccess (twice)
@@ -42,7 +40,7 @@ def test_transform_simple_proc_stubs_dml():
 
 
 def test_transform_loop_skips_table_variable_insert():
-    sql = (SAMPLES / "loop_with_update.sql").read_text(encoding="utf-8")
+    sql = sample_sql("loop_with_update.sql").read_text(encoding="utf-8")
     result = transform_sql(sql)
     assert result.stats.dml_stubbed >= 3  # dbo DML, not @OrderQueue
     # Table variable insert should remain active
@@ -83,7 +81,7 @@ def test_transform_reports_progress():
 
 
 def test_transform_enterprise_complex_proc():
-    sql = (SAMPLES / "enterprise_complex_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("enterprise_complex_proc.sql").read_text(encoding="utf-8")
     result = transform_sql(sql, add_block_markers=True)
     assert result.stats.dml_stubbed >= 4  # Orders, Inventory, MERGE, AuditLog, ErrorLog
     assert result.stats.traces_added >= 2

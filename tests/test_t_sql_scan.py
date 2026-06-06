@@ -1,15 +1,12 @@
 """Tests for text-based T-SQL scanning (sqlglot gap filler)."""
 
-from pathlib import Path
-
+from conftest import sample_sql
 from sql_sp_harness.t_sql_scan import scan_tsql
 from sql_sp_harness.inventory import inventory_from_sql
 
-SAMPLES = Path(__file__).parents[1] / "samples"
-
 
 def test_scan_my_proc_finds_update_and_try_catch():
-    sql = (SAMPLES / "my_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("my_proc.sql").read_text(encoding="utf-8")
     scan = scan_tsql(sql)
     assert scan.update == 1
     assert scan.insert == 1
@@ -24,7 +21,7 @@ def test_scan_my_proc_finds_update_and_try_catch():
 
 
 def test_scan_my_proc_2_finds_all_updates_and_try_catch():
-    sql = (SAMPLES / "my_proc_2.sql").read_text(encoding="utf-8")
+    sql = sample_sql("my_proc_2.sql").read_text(encoding="utf-8")
     scan = scan_tsql(sql)
     assert scan.update == 3
     assert scan.try_catch_blocks == 1
@@ -33,7 +30,7 @@ def test_scan_my_proc_2_finds_all_updates_and_try_catch():
 
 
 def test_inventory_merges_scan_update_when_ast_misses():
-    sql = (SAMPLES / "my_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("my_proc.sql").read_text(encoding="utf-8")
     inv = inventory_from_sql(sql)
     assert inv.update == 1
     assert inv.update == 1
@@ -45,7 +42,7 @@ def test_inventory_merges_scan_update_when_ast_misses():
 
 
 def test_inventory_report_shows_statement_details():
-    sql = (SAMPLES / "my_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("my_proc.sql").read_text(encoding="utf-8")
     text = inventory_from_sql(sql).to_text(non_zero_only=True)
     assert "dbo.AuditLog" in text
     assert "dbo.Employees" in text
@@ -53,7 +50,7 @@ def test_inventory_report_shows_statement_details():
 
 
 def test_my_proc_2_identified_lists_all_inserts():
-    sql = (SAMPLES / "my_proc_2.sql").read_text(encoding="utf-8")
+    sql = sample_sql("my_proc_2.sql").read_text(encoding="utf-8")
     inv = inventory_from_sql(sql)
     assert inv.insert == 2
     inserts = inv.details.get("INSERT", [])

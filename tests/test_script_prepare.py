@@ -1,15 +1,12 @@
 """Tests for deploy preamble stripping and CREATE PROC -> DECLARE conversion."""
 
-from pathlib import Path
-
+from conftest import sample_sql
 from sql_sp_harness.inventory import inventory_from_sql
 from sql_sp_harness.script_prepare import (
     convert_create_procedure_to_declares,
     strip_deploy_preamble,
 )
 from sql_sp_harness.transform import transform_sql
-
-SAMPLES = Path(__file__).parents[1] / "samples"
 
 PREAMBLE = """
 IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[p]') AND type IN (N'P', N'PC'))
@@ -51,7 +48,7 @@ END
 
 
 def test_transform_enterprise_strips_preamble_and_inlines_params():
-    sql = (SAMPLES / "enterprise_complex_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("enterprise_complex_proc.sql").read_text(encoding="utf-8")
     result = transform_sql(sql)
     assert "IF EXISTS" not in result.sql
     assert "SET ANSI_NULLS" not in result.sql
@@ -63,14 +60,14 @@ def test_transform_enterprise_strips_preamble_and_inlines_params():
 
 
 def test_analyze_enterprise_ignores_preamble_dml():
-    sql = (SAMPLES / "enterprise_complex_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("enterprise_complex_proc.sql").read_text(encoding="utf-8")
     inv = inventory_from_sql(sql)
     assert "DROP PROCEDURE" not in " ".join(inv.details.get("DELETE", []))
 
 
 def test_strip_deploy_preamble_keeps_nested_if_exists_blocks():
     """In-procedure IF EXISTS (... ) BEGIN must not be treated as deploy preamble."""
-    sql = (SAMPLES / "sample1.sql").read_text(encoding="utf-8")
+    sql = sample_sql("sample1.sql").read_text(encoding="utf-8")
     stripped = strip_deploy_preamble(sql)
     assert "jshdcbjsdhc" in stripped
     assert stripped.count("if exists") >= 2

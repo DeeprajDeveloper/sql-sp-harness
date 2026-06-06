@@ -1,14 +1,11 @@
 """Tests for inventory pass."""
 
-from pathlib import Path
-
+from conftest import sample_sql
 from sql_sp_harness.inventory import inventory_from_sql
-
-SAMPLES = Path(__file__).parents[1] / "samples"
 
 
 def test_simple_proc_inventory_parses():
-    sql = (SAMPLES / "simple_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("simple_proc.sql").read_text(encoding="utf-8")
     inv = inventory_from_sql(sql)
     assert inv.is_parsable
     assert inv.insert >= 1
@@ -16,7 +13,7 @@ def test_simple_proc_inventory_parses():
 
 
 def test_loop_proc_inventory():
-    sql = (SAMPLES / "loop_with_update.sql").read_text(encoding="utf-8")
+    sql = sample_sql("loop_with_update.sql").read_text(encoding="utf-8")
     inv = inventory_from_sql(sql)
     assert inv.is_parsable
     assert inv.while_count >= 1

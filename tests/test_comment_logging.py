@@ -2,11 +2,10 @@
 
 from pathlib import Path
 
+from conftest import sample_sql
 from sql_sp_harness.comments import strip_sql_comments
 from sql_sp_harness.run_log import RunLogger
 from sql_sp_harness.transform import transform_sql
-
-SAMPLES = Path(__file__).parents[1] / "samples"
 
 
 def test_strip_sql_comments_emits_detail(tmp_path: Path):
@@ -24,7 +23,7 @@ def test_strip_sql_comments_emits_detail(tmp_path: Path):
 def test_generate_log_captures_comment_and_prepare_detail(tmp_path: Path):
     log_path = tmp_path / "gen.log"
     logger = RunLogger(log_path)
-    sql = (SAMPLES / "simple_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("simple_proc.sql").read_text(encoding="utf-8")
     transform_sql(
         sql,
         on_log_info=logger.as_info_callback(),

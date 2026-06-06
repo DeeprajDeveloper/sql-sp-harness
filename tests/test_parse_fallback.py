@@ -1,17 +1,14 @@
 """Tests for sqlglot failure with text-scan fallback."""
 
-from pathlib import Path
-
+from conftest import sample_sql
 from sql_sp_harness.inventory import inventory_from_parse
 from sql_sp_harness.parse import ParseResult, parse_sql, strip_go_batches
 from sql_sp_harness.t_sql_scan import scan_tsql
 
-SAMPLES = Path(__file__).parents[1] / "samples"
-
 
 def test_analyze_without_ast_still_reports_dml():
     """Org scripts with preamble + sqlglot gaps should not show a fatal parse error."""
-    sql = (SAMPLES / "enterprise_complex_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("enterprise_complex_proc.sql").read_text(encoding="utf-8")
     cleaned = strip_go_batches(sql)
     scan = scan_tsql(cleaned)
     result = ParseResult(

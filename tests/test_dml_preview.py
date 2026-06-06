@@ -1,16 +1,13 @@
 """Tests for DML SELECT preview generation."""
 
-from pathlib import Path
-
+from conftest import sample_sql
 from sql_sp_harness.dml_preview import build_dml_preview
 from sql_sp_harness.t_sql_scan import find_dml_block_end
 from sql_sp_harness.transform import transform_sql
 
-SAMPLES = Path(__file__).parents[1] / "samples"
-
 
 def test_update_preview_for_my_proc():
-    sql = (SAMPLES / "my_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("my_proc.sql").read_text(encoding="utf-8")
     lines = sql.splitlines()
     start = next(i for i, ln in enumerate(lines) if ln.strip().startswith("UPDATE dbo.Employees"))
     end = find_dml_block_end(lines, start)
@@ -73,7 +70,7 @@ def test_update_preview_with_table_alias():
 
 
 def test_transform_my_proc_uses_print_and_select_previews():
-    sql = (SAMPLES / "my_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("my_proc.sql").read_text(encoding="utf-8")
     result = transform_sql(sql)
     assert "PRINT CONCAT(N'[DBG] @IsSuccess" in result.sql
     assert "RAISERROR(N'[DBG] @IsSuccess" not in result.sql

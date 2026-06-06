@@ -2,20 +2,19 @@
 
 from pathlib import Path
 
+from conftest import SAMPLES_SQL, sample_sql
 from sql_sp_harness.run_log import RunLogger, resolve_log_path
 from sql_sp_harness.transform import transform_sql
-
-SAMPLES = Path(__file__).parents[1] / "samples"
 
 
 def test_resolve_log_path_explicit_file(tmp_path: Path):
     custom = tmp_path / "custom.log"
-    assert resolve_log_path(SAMPLES / "my_proc.sql", log=False, log_file=custom) == custom
+    assert resolve_log_path(SAMPLES_SQL / "my_proc.sql", log=False, log_file=custom) == custom
 
 
 def test_resolve_log_path_default_stem():
-    path = resolve_log_path(SAMPLES / "my_proc.sql", log=True, log_file=None)
-    assert path == SAMPLES / "my_proc.log"
+    path = resolve_log_path(SAMPLES_SQL / "my_proc.sql", log=True, log_file=None)
+    assert path == SAMPLES_SQL / "my_proc.log"
 
 
 def test_log_line_format_includes_function_name(tmp_path: Path):
@@ -29,7 +28,7 @@ def test_log_line_format_includes_function_name(tmp_path: Path):
 
 
 def test_generate_writes_log_file(tmp_path: Path):
-    sql = (SAMPLES / "simple_proc.sql").read_text(encoding="utf-8")
+    sql = sample_sql("simple_proc.sql").read_text(encoding="utf-8")
     log_path = tmp_path / "run.log"
     logger = RunLogger(log_path)
     transform_sql(
