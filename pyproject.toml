@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "sql-sp-harness"
 dynamic = ["version"]
-description = "Generate safe T-SQL stored-procedure debug harness scripts (analyze + DML previews)"
+description = "Generate safe T-SQL stored-procedure debug harness scripts (analyze, DML previews, EXEC stubs)"
 readme = { file = "README.md", content-type = "text/markdown" }
 license = "MIT"
 license-files = ["LICENSE"]

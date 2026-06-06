@@ -5,7 +5,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta
 			name="description"
-			content="sql-sp-harness turns SQL Server stored procedures into safe debug scripts with DML previews and variable traces."
+			content="sql-sp-harness turns SQL Server stored procedures into safe debug scripts with DML previews, EXEC PRINT stubs, and variable traces."
 		/>
 		<title>sql-sp-harness - Stored Procedure Debug Harness</title>
 		<link rel="icon" type="image/png" href="./images/logo.png" />
@@ -36,7 +36,7 @@
 					id="package-version"
 					aria-label="Current package version"
 				>
-					<span class="sidebar-version__value">Version: 1.0.5</span>
+					<span class="sidebar-version__value">Version: 1.0.6</span>
 				</div>
 				<div class="divider"></div>
 				<nav class="sidebar-nav" aria-label="Primary">
@@ -199,9 +199,10 @@
 							<p class="lead">
 								Turn SQL Server stored procedures into
 								<strong>runnable debuggable scripts</strong> for pre-production
-								SQL Server - DML replaced with <code>SELECT</code> previews,
-								variables traced with <code>PRINT</code>, no writes to real
-								tables.
+								SQL Server — DML replaced with <code>SELECT</code> previews,
+								nested <code>EXEC</code> calls replaced with <code>PRINT</code>
+								stubs, variables traced with <code>PRINT</code>, no writes to
+								real tables.
 							</p>
 							<div class="badges">
 								<span class="badge">Python 3.10+</span>
@@ -239,8 +240,10 @@
 								<article class="card">
 									<h3>generate</h3>
 									<p>
-										Build a debug script: stub real-table DML, add traces, strip
-										deploy preamble, inline procedure parameters as
+										Build a debug script: stub real-table DML with
+										<code>SELECT</code> previews, replace nested
+										<code>EXEC</code> calls with <code>PRINT</code> stubs, add
+										variable traces, strip deploy preamble, inline parameters as
 										<code>DECLARE</code>.
 									</p>
 								</article>
@@ -292,8 +295,16 @@
 								<span class="flow-arrow" aria-hidden="true">→</span>
 								<div class="flow-step">
 									<strong>Debug script</strong>
-									SELECT previews · PRINT traces · DECLARE params (no CREATE PROC)
+									SELECT previews · EXEC PRINT stubs · variable traces · DECLARE
+									params (no CREATE PROC)
 								</div>
+							</div>
+							<div class="callout">
+								<strong>Nested EXEC calls.</strong> Multi-line
+								<code>EXEC dbo.OtherProc @a = @a, …</code> blocks become
+								<code>[DBG-EXEC]</code> comments plus <code>PRINT</code> lines
+								showing the procedure name, the full runnable
+								<code>EXEC …</code> command, and runtime parameter values.
 							</div>
 							<div class="callout">
 								<strong>Deploy preamble vs in-procedure checks.</strong> Only
@@ -334,8 +345,9 @@
 										<tr>
 											<td><code>generate</code></td>
 											<td>
-												Produce <code>*_debug.sql</code> harness with previews
-												and traces
+												Produce <code>*_debug.sql</code> harness with DML
+												<code>SELECT</code> previews, <code>EXEC</code>
+												<code>PRINT</code> stubs, and variable traces
 											</td>
 										</tr>
 										<tr>
@@ -382,7 +394,7 @@
 												Timestamped audit log:
 												<code>[datetime] [function] [LEVEL] message</code>.
 												<code>DEBUG</code> lines list each comment strip, preamble
-												removal, DML stub, and trace injection.
+												removal, DML stub, EXEC stub, and trace injection.
 											</td>
 										</tr>
 										<tr>
@@ -409,7 +421,11 @@
 										<tr>
 											<td><code>--no-stub-dml</code></td>
 											<td>generate</td>
-											<td>Traces only; leave DML unchanged</td>
+											<td>
+												Traces only; leave DML unchanged (nested
+												<code>EXEC</code> calls are still replaced with
+												<code>PRINT</code> stubs)
+											</td>
 										</tr>
 									</tbody>
 								</table>
@@ -597,6 +613,21 @@ py -m sql_sp_harness generate -i MyProc.sql -o MyProc_debug.sql</code></pre>
 										<tr>
 											<td>DDL inside proc</td>
 											<td>Not stubbed</td>
+										</tr>
+										<tr>
+											<td>Dynamic EXEC</td>
+											<td>
+												<code>EXEC(@sql)</code> and
+												<code>sp_executesql</code> are not rewritten
+											</td>
+										</tr>
+										<tr>
+											<td>Nested EXEC calls</td>
+											<td>
+												Replaced with <code>[DBG-EXEC]</code>
+												<code>PRINT</code> stubs (procedure, command, parameter
+												values)
+											</td>
 										</tr>
 										<tr>
 											<td>SSMS deploy preamble</td>

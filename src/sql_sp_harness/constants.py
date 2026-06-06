@@ -26,12 +26,20 @@ INSERT_TABLE_VAR = re.compile(r"^\s*INSERT\s+INTO\s+@", IGNORECASE)
 UPDATE_TABLE_VAR = re.compile(r"^\s*UPDATE\s+@", IGNORECASE)
 DELETE_TABLE_VAR = re.compile(r"^\s*DELETE\s+FROM\s+@", IGNORECASE)
 
-# --- DML block boundary heuristics (semicolon-optional scripts) ---
+# --- DML / EXEC block boundary heuristics (semicolon-optional scripts) ---
 NEW_STMT_AFTER_DML = re.compile(
     r"^\s*(INSERT|UPDATE|DELETE|MERGE|SET\s+@|BEGIN|END\b|DECLARE|SELECT\b|IF\b|WHILE\b|"
-    r"PRINT\b|RETURN\b|THROW\b|RAISERROR\b|COMMIT\b|ROLLBACK\b)",
+    r"PRINT\b|RETURN\b|THROW\b|RAISERROR\b|COMMIT\b|ROLLBACK\b|GOTO\b|EXEC\b|EXECUTE\b)",
     IGNORECASE,
 )
+
+# --- EXEC statement detection (transform stubbing) ---
+EXEC_START = re.compile(
+    r"^\s*(?:EXEC|EXECUTE)\s+(?:(?P<ret>@\w+)\s*=\s*)?(?P<proc>(?!\()[^\s;(]+)(?P<rest>.*)$",
+    IGNORECASE,
+)
+EXEC_PARAM_LINE = re.compile(r"^\s*@?\w+\s*=", IGNORECASE)
+EXEC_DYNAMIC = re.compile(r"^\s*(?:EXEC|EXECUTE)\s*\(", IGNORECASE)
 DML_UPDATE_COLUMN_SET = re.compile(r"^\s+SET\s+(?!@)", IGNORECASE)
 DML_UPDATE_CLAUSE = re.compile(r"^\s+(FROM|WHERE|JOIN|INNER|LEFT|RIGHT|FULL|CROSS|OUTPUT)\b", IGNORECASE)
 DML_INSERT_CONTINUATION = re.compile(r"^\s+(VALUES|SELECT|DEFAULT)\b", IGNORECASE)
@@ -56,7 +64,10 @@ INLINE_SET = re.compile(r"(?P<indent>^|\n)(?P<prefix>.*?)(?P<stmt>SET\s+(?P<var>
 SELECT_ASSIGN = re.compile(r"(?P<stmt>SELECT\s+[^;]*@\w+\s*=[^;]+;)", IGNORECASE_DOTALL)
 SET_VAR_LINE = re.compile(r"^(\s*)SET\s+(@\w+)\s*=", IGNORECASE)
 SET_NOCOUNT = re.compile(r"^\s*SET\s+NOCOUNT\b", IGNORECASE)
-ALREADY_STUBBED = re.compile(r"\[DBG-PREVIEW\]|\[DBG-DISABLED\]|\[DBG\]\s+Skipped", IGNORECASE)
+ALREADY_STUBBED = re.compile(
+    r"\[DBG-PREVIEW\]|\[DBG-DISABLED\]|\[DBG-EXEC\]|\[DBG\]\s+Skipped",
+    IGNORECASE,
+)
 LINE_INDENT = re.compile(r"^(\s*)")
 
 # --- DML SELECT preview (dml_preview) ---
@@ -100,7 +111,7 @@ Turn a T-SQL stored procedure into a safe, runnable debug script.
 \b
 Commands:
   analyze    See what a stored procedure does (DML, TRY/CATCH, loops, variables)
-  generate   Create a debug harness script safe to run on a development database
+  generate   Create a debug harness (DML previews, EXEC PRINT stubs, variable traces)
 
 \b
 Quick start:

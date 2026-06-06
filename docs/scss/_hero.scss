@@ -20,9 +20,9 @@
 
 .hero-title {
   font-size: clamp($hero-title-min, $hero-title-fluid, $hero-title-max);
-  font-family: $font-heading;
+  font-family: $font-doto-stack;
   margin: 0 0 $space-3xl;
-  font-weight: $font-weight-semibold;
+  font-weight: $font-weight-bold;
   line-height: $line-height-heading;
 }
 

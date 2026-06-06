@@ -13,6 +13,8 @@ from sql_sp_harness.constants import (
     DELETE_FROM_CLAUSE,
     DELETE_TABLE_VAR,
     DML_START,
+    EXEC_DYNAMIC,
+    EXEC_START,
     INLINE_SET,
     INSERT_TABLE_VAR,
     INSERT_TARGET,
@@ -25,6 +27,7 @@ from sql_sp_harness.constants import (
 )
 from sql_sp_harness.comments import strip_sql_comments
 from sql_sp_harness.dml_preview import build_dml_preview
+from sql_sp_harness.exec_preview import build_exec_stub, find_exec_block_end
 from sql_sp_harness.parse import parse_for_transform, suppress_sqlglot_warnings
 from sql_sp_harness.script_prepare import prepare_for_transform
 from sql_sp_harness.run_log import LogCallback, emit_log, truncate_for_log
@@ -34,6 +37,7 @@ from sql_sp_harness.t_sql_scan import find_dml_block_end
 @dataclass
 class TransformStats:
     dml_stubbed: int = 0
+    exec_stubbed: int = 0
     traces_added: int = 0
     warnings: list[str] = field(default_factory=list)
 
@@ -88,6 +92,40 @@ def _find_dml_line_blocks(lines: list[str]) -> list[tuple[int, int]]:
         blocks.append((start, end))
         i = end + 1
     return blocks
+
+
+def _find_exec_line_blocks(lines: list[str]) -> list[tuple[int, int]]:
+    """Return (start_line, end_line) inclusive for EXEC / EXECUTE blocks."""
+    blocks: list[tuple[int, int]] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if ALREADY_STUBBED.search(line):
+            i += 1
+            continue
+        if EXEC_DYNAMIC.match(line) or not EXEC_START.match(line):
+            i += 1
+            continue
+        start = i
+        end = find_exec_block_end(lines, start)
+        blocks.append((start, end))
+        i = end + 1
+    return blocks
+
+
+def _replace_exec_block(block_lines: list[str], indent: str) -> list[str]:
+    preview = build_exec_stub(block_lines, indent)
+    if preview is not None:
+        return preview
+
+    first = block_lines[0].strip()
+    commented = "\n".join(f"{indent}-- {ln}" if ln.strip() else ln for ln in block_lines)
+    return [
+        f"{indent}/* [DBG-DISABLED] EXEC",
+        commented,
+        f"{indent}*/",
+        f"{indent}PRINT N'[DBG-EXEC] Skipped unsupported EXEC statement';",
+    ]
 
 
 def _replace_dml_block(block_lines: list[str], indent: str) -> list[str]:
@@ -285,6 +323,38 @@ def _apply_line_edits(
             lines[start : end + 1] = replacement
             stats.dml_stubbed += 1
 
+    exec_blocks = _find_exec_line_blocks(lines)
+    if exec_blocks:
+        _emit_log(
+            on_progress=on_progress,
+            on_log_info=on_log_info,
+            function="_apply_line_edits",
+            message=f"Stubbing {len(exec_blocks)} EXEC block(s)...",
+        )
+    for start, end in reversed(exec_blocks):
+        block = lines[start : end + 1]
+        indent_match = LINE_INDENT.match(block[0])
+        indent = indent_match.group(1) if indent_match else ""
+        preview = " ".join(block[0].strip().split())[:100]
+        _emit_log(
+            on_progress=on_progress,
+            on_log_info=on_log_info,
+            function="_apply_line_edits",
+            message=f"Stubbing EXEC lines {start + 1}-{end + 1}: {preview}",
+        )
+        replacement = _replace_exec_block(block, indent)
+        emit_log(on_detail, "_apply_line_edits", "  EXEC replacement:")
+        for repl_line in replacement[:12]:
+            emit_log(on_detail, "_apply_line_edits", f"    + {truncate_for_log(repl_line)}")
+        if len(replacement) > 12:
+            emit_log(
+                on_detail,
+                "_apply_line_edits",
+                f"    ... {len(replacement) - 12} more line(s)",
+            )
+        lines[start : end + 1] = replacement
+        stats.exec_stubbed += 1
+
     _emit_log(
         on_progress=on_progress,
         on_log_info=on_log_info,
@@ -434,6 +504,7 @@ def transform_sql(
         on_detail=on_detail,
     )
     stats.dml_stubbed = line_stats.dml_stubbed
+    stats.exec_stubbed = line_stats.exec_stubbed
     stats.traces_added = line_stats.traces_added
     stats.warnings.extend(line_stats.warnings)
 
@@ -456,6 +527,7 @@ def transform_sql(
         function="transform_sql",
         message=(
             f"Transform complete: {stats.dml_stubbed} DML stubbed, "
+            f"{stats.exec_stubbed} EXEC stubbed, "
             f"{stats.traces_added} trace(s) added."
         ),
     )

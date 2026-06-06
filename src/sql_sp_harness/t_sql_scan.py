@@ -116,6 +116,8 @@ def find_dml_block_end(lines: list[str], start: int) -> int:
         if ";" in lines[i]:
             return i
         if i > start:
+            if _line_starts_new_statement(lines[i], dml_kind):
+                return i - 1
             j = i + 1
             while j < len(lines) and not lines[j].strip():
                 j += 1

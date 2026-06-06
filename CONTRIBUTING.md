@@ -9,7 +9,9 @@ pip install -e ".[dev]"
 pytest
 ```
 
-Sample SQL for manual checks lives under `samples/` (e.g. `samples/sample1.sql`, `samples/sql/enterprise_complex_proc.sql`).
+Sample SQL for manual checks lives under `samples/` (e.g. `samples/sample1.sql` with nested `EXEC` and multi-line `IF EXISTS`, `samples/sql/enterprise_complex_proc.sql`).
+
+Tests resolve sample paths via `tests/conftest.py` (`sample_sql()` checks `samples/sql/` then `samples/`). Transform coverage includes `tests/test_exec_preview.py` for EXEC stubbing.
 
 ## Documentation site (`docs/`)
 

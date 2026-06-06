@@ -14,7 +14,7 @@
 
 **Documentation site:** [https://deeprajdeveloper.github.io/sql-sp-harness/](https://deeprajdeveloper.github.io/sql-sp-harness/) (GitHub Pages). Site styles live in `docs/scss/`; compile with `npx sass docs/scss/styles.scss docs/scss/css/styles.css`. CI syncs `docs/version.json` from the package via `python3 scripts/sync_docs_version.py` before each Pages deploy.
 
-> Not a live debugger. This tool generates a **static test harness** (DML previews + variable traces), not breakpoints or step-into debugging.
+> Not a live debugger. This tool generates a **static test harness** (DML previews + EXEC PRINT stubs + variable traces), not breakpoints or step-into debugging.
 >
 > Not affiliated with Microsoft. "SQL Server" and T-SQL are used descriptively only.
 
@@ -23,7 +23,7 @@
 | Command | Purpose |
 |---------|---------|
 | `analyze` | See what keyword elements that procedure contains along with counts — DML, TRY/CATCH, loops, SET, line-level detail |
-| `generate` | Create a debug harness: real-table DML → `SELECT` previews, `PRINT` traces on variables |
+| `generate` | Create a debug harness: real-table DML → `SELECT` previews, nested `EXEC` → `PRINT` stubs, `PRINT` traces on variables |
 
 Output includes a banner on the top of the procedure stating: **DEBUG HARNESS — DO NOT RUN ON PRODUCTION**.
 
@@ -75,6 +75,26 @@ Deploy preamble (`IF EXISTS … DROP PROCEDURE`, standalone `DROP PROCEDURE`, `S
 
 `generate` also rewrites `CREATE PROCEDURE` into `DECLARE` parameters so the script does not create the procedure on the server.
 
+### Nested EXEC stubbing
+
+`generate` replaces in-procedure `EXEC` / `EXECUTE` calls (including multi-line parameter lists) with `[DBG-EXEC]` `PRINT` stubs that show:
+
+- which stored procedure would run
+- the full runnable `EXEC …` command with parameter assignments
+- runtime values for `@` parameters via `PRINT CONCAT`
+
+Example output:
+
+```sql
+-- [DBG-EXEC] Would have executed stored procedure dbo.proc_name2
+PRINT N'[DBG-EXEC] Procedure: dbo.proc_name2';
+PRINT N'[DBG-EXEC] Command: EXEC dbo.proc_name2 @fld1 = @fld1, @fld2 = @fld2';
+PRINT N'[DBG-EXEC] Parameters:';
+PRINT CONCAT(N'[DBG-EXEC] @fld1 = ', CAST(@fld1 AS NVARCHAR(4000)));
+```
+
+`--no-stub-dml` skips DML replacement but still stubs nested `EXEC` calls. Dynamic SQL (`EXEC(@sql)`, `sp_executesql`) is not rewritten.
+
 ### Analyze options
 
 ```bash
@@ -87,7 +107,7 @@ sql-sp-harness analyze -i MyProc.sql --full                # show zero-count sec
 
 Use `--log` to write a timestamped log beside the input (`MyProc.log`), or `--log-file path/to/run.log` for a custom path. Works with both `analyze` and `generate`.
 
-Each line uses the format `[datetime] [function_name] [LEVEL] message`. `INFO` lines mark milestones (file read, preamble strip, transform complete); `DEBUG` lines list per-line edits (comment removal, DML stubs, trace injection, preamble removal). Functions include `strip_deploy_preamble`, `strip_comments`, `stub_dml`, `inject_traces`, and others.
+Each line uses the format `[datetime] [function_name] [LEVEL] message`. `INFO` lines mark milestones (file read, preamble strip, transform complete); `DEBUG` lines list per-line edits (comment removal, DML stubs, EXEC stubs, trace injection, preamble removal). Functions include `strip_deploy_preamble`, `strip_comments`, `_apply_line_edits`, `inject_traces`, and others.
 
 ```bash
 sql-sp-harness generate -i MyProc.sql -o MyProc_debug.sql --log
@@ -132,6 +152,8 @@ sql-sp-harness generate -i MyProc.sql -o MyProc_debug.sql --encoding utf-16-le
 | Encrypted procedures | No source |
 | Cursors | Not rewritten |
 | DDL inside proc | Not stubbed |
+| Dynamic EXEC (`EXEC(@sql)`, `sp_executesql`) | Not rewritten |
+| Nested EXEC calls | Replaced with `[DBG-EXEC]` PRINT stubs |
 | SSMS deploy preamble | Stripped; in-procedure `IF EXISTS` preserved |
 
 Always review generated scripts before running them on the database server.

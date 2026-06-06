@@ -112,7 +112,9 @@ def generate_cmd(
         help="Trace style: print (default) or raiserror (NOWAIT).",
     ),
     no_stub_dml: bool = typer.Option(
-        False, "--no-stub-dml", help="Skip DML stubbing; only add traces."
+        False,
+        "--no-stub-dml",
+        help="Skip DML stubbing; only add traces (nested EXEC calls are still stubbed).",
     ),
     block_markers: bool = typer.Option(
         False,
@@ -150,8 +152,9 @@ def generate_cmd(
     """
     Generate a debug harness script from a stored procedure.
 
-    Replaces writes to real tables with SELECT previews and adds PRINT traces on
-    variables so you can run the script on a dev database without side effects.
+    Replaces writes to real tables with SELECT previews, replaces nested EXEC calls
+    with PRINT stubs, and adds PRINT traces on variables so you can run the script
+    on a dev database without side effects.
     """
     run_generate(
         input,
