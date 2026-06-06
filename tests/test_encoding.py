@@ -1,5 +1,7 @@
 """Tests for SQL file encoding detection."""
 
+from pathlib import Path
+
 from conftest import sample_sql
 from sql_sp_harness.encoding import decode_sql_bytes, read_sql_file
 
