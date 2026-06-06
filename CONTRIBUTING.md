@@ -3,19 +3,41 @@
 ## First-time repo setup
 
 ```bash
-cd sql-sp-harness
 git clone https://github.com/DeeprajDeveloper/sql-sp-harness.git
 cd sql-sp-harness
 pip install -e ".[dev]"
 pytest
 ```
 
+Sample SQL for manual checks lives under `samples/` (e.g. `samples/sample1.sql`, `samples/sql/enterprise_complex_proc.sql`).
+
+## Documentation site (`docs/`)
+
+The GitHub Pages site is static HTML in `docs/`. Styles are authored in SCSS:
+
+```bash
+npx sass docs/scss/styles.scss docs/scss/css/styles.css
+# or compressed (matches CI):
+npx sass docs/scss/styles.scss docs/scss/css/styles.css --style=compressed
+```
+
+The sidebar version badge reads `docs/version.json`. Sync it from the package after bumping `__version__`:
+
+```bash
+python3 scripts/sync_docs_version.py
+```
+
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) runs version sync and SCSS compile on every push to `main` / `master`, then deploys the `docs/` folder.
+
+When changing site content or styles, edit `docs/index.html` and/or `docs/scss/`, recompile CSS, commit the generated `docs/scss/css/styles.css` (and `version.json` if you bumped the package), and push.
+
 ## Release
 
 1. Bump `__version__` in `src/sql_sp_harness/__init__.py` (single source of truth; `pyproject.toml` reads it at build time)
-2. Run `pytest` (requires `samples/*.sql` in the repo root)
-3. Commit and push to `master` / `main` / `release` — CI publishes a **TestPyPI** build automatically
-4. When ready for production, tag and push: `git tag v1.x.x && git push origin v1.x.x` — CI publishes to **PyPI**
+2. Run `python3 scripts/sync_docs_version.py` and commit `docs/version.json`
+3. Run `pytest`
+4. Commit and push to `master` / `main` / `release` — CI publishes a **TestPyPI** build automatically
+5. When ready for production, tag and push: `git tag v1.x.x && git push origin v1.x.x` — CI publishes to **PyPI**
 
 Local publish (optional):
 
@@ -68,3 +90,4 @@ For production PyPI, repeat on [pypi.org](https://pypi.org/manage/account/publis
 - Version lives only in `src/sql_sp_harness/__init__.py` (`dynamic` version in `pyproject.toml`)
 - `MANIFEST.in` excludes tests and CI files from the source distribution
 - Always run `twine check dist/*` before upload (CI does this automatically)
+- Console entry points: `sql-sp-harness` and alias `sp-harness` (see `pyproject.toml`)

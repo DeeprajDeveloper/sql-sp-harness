@@ -293,3 +293,11 @@ html[data-theme="light"] #theme-toggle {
     padding: $space-5xl;
   }
 }
+
+.site-footer-note {
+  color: $muted;
+  font-size: $font-size-2xs;
+  margin-top: $space-5xl;
+  // text-align: center;
+  padding: $space-xl;
+}

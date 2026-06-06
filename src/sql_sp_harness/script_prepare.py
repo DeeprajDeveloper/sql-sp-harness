@@ -16,8 +16,58 @@ from sql_sp_harness.constants import (
     SET_ANSI_NULLS,
     SET_QUOTED_IDENTIFIER,
     STANDALONE_DROP_PROC,
+    IGNORECASE,
 )
 from sql_sp_harness.run_log import LogCallback, emit_log, truncate_for_log
+
+_EXISTS_OPEN = re.compile(r"\bEXISTS\s*\(", IGNORECASE)
+
+
+def _scan_paren_block_end_line(lines: list[str], start_line: int, open_paren_col: int) -> int:
+    """Return line index where parenthesis depth opened at ``open_paren_col`` returns to zero."""
+    depth = 0
+    for line_idx in range(start_line, len(lines)):
+        line = lines[line_idx]
+        col = open_paren_col if line_idx == start_line else 0
+        in_string = False
+        while col < len(line):
+            ch = line[col]
+            if ch == "'":
+                if in_string and col + 1 < len(line) and line[col + 1] == "'":
+                    col += 2
+                    continue
+                in_string = not in_string
+                col += 1
+                continue
+            if not in_string:
+                if ch == "(":
+                    depth += 1
+                elif ch == ")":
+                    depth -= 1
+                    if depth == 0:
+                        return line_idx
+            col += 1
+    return start_line
+
+
+def _deploy_if_exists_drop_span(lines: list[str], start: int) -> tuple[int, int] | None:
+    """
+    If ``lines[start]`` is SSMS deploy ``IF EXISTS (...) DROP PROC``, return [start, end) line span.
+
+    In-procedure ``IF EXISTS (SELECT ... FROM user_table ...)`` is followed by BEGIN, not DROP.
+    """
+    if start >= len(lines) or not IF_EXISTS.match(lines[start]):
+        return None
+    open_match = _EXISTS_OPEN.search(lines[start])
+    if not open_match:
+        return None
+    close_line = _scan_paren_block_end_line(lines, start, open_match.end() - 1)
+    scan = close_line + 1
+    while scan < len(lines) and not lines[scan].strip():
+        scan += 1
+    if scan >= len(lines) or not DROP_PROCEDURE.search(lines[scan]):
+        return None
+    return start, scan + 1
 
 
 def _split_param_list(text: str) -> list[str]:
@@ -53,33 +103,18 @@ def strip_deploy_preamble(sql: str, *, on_detail: LogCallback | None = None) -> 
     while i < len(lines):
         line = lines[i]
         line_no = i + 1
-        if IF_EXISTS.match(line):
-            emit_log(
-                on_detail,
-                "strip_deploy_preamble",
-                f"  preamble line {line_no}: removed IF EXISTS block: {truncate_for_log(line)}",
-            )
-            i += 1
-            while i < len(lines):
-                if DROP_PROCEDURE.search(lines[i]):
-                    emit_log(
-                        on_detail,
-                        "strip_deploy_preamble",
-                        f"  preamble line {i + 1}: removed DROP PROCEDURE: "
-                        f"{truncate_for_log(lines[i])}",
-                    )
-                    i += 1
-                    removed += 1
-                    break
+        deploy_span = _deploy_if_exists_drop_span(lines, i)
+        if deploy_span is not None:
+            start, end = deploy_span
+            for drop_idx in range(start, end):
                 emit_log(
                     on_detail,
                     "strip_deploy_preamble",
-                    f"  preamble line {i + 1}: removed (IF EXISTS tail): "
-                    f"{truncate_for_log(lines[i])}",
+                    f"  preamble line {drop_idx + 1}: removed deploy IF EXISTS/DROP: "
+                    f"{truncate_for_log(lines[drop_idx])}",
                 )
-                i += 1
                 removed += 1
-            removed += 1
+            i = end
             continue
         if STANDALONE_DROP_PROC.match(line):
             emit_log(

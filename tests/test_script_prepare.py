@@ -66,3 +66,27 @@ def test_analyze_enterprise_ignores_preamble_dml():
     sql = (SAMPLES / "enterprise_complex_proc.sql").read_text(encoding="utf-8")
     inv = inventory_from_sql(sql)
     assert "DROP PROCEDURE" not in " ".join(inv.details.get("DELETE", []))
+
+
+def test_strip_deploy_preamble_keeps_nested_if_exists_blocks():
+    """In-procedure IF EXISTS (... ) BEGIN must not be treated as deploy preamble."""
+    sql = (SAMPLES / "sample1.sql").read_text(encoding="utf-8")
+    stripped = strip_deploy_preamble(sql)
+    assert "jshdcbjsdhc" in stripped
+    assert stripped.count("if exists") >= 2
+    assert "DROP procedure [dbo].[usp_ComplexProcedureName]" not in stripped
+    assert "create procedure" in stripped.lower()
+
+
+def test_nested_multiline_if_exists_predicate_end():
+    lines = [
+        "if exists(",
+        "    select 1 from dbo.t",
+        ")",
+        "begin",
+        "    select 2",
+        "end",
+    ]
+    from sql_sp_harness.script_prepare import _deploy_if_exists_drop_span
+
+    assert _deploy_if_exists_drop_span(lines, 0) is None

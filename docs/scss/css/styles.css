@@ -362,6 +362,13 @@ html[data-theme=light] #theme-toggle .theme-icon--moon {
   padding: 1.25rem;
 }
 
+.site-footer-note {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 1.25rem;
+  padding: 0.75rem;
+}
+
 .hero {
   padding: 3rem 0 2.5rem;
   text-align: center;
